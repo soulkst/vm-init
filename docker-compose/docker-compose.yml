@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  ngingx-proxy-manager:
+    container_name: ngingx-proxy-manager
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '53000:80'
+      - '53001:81'
+      # - '443:443'
+    volumes:
+      - ~/docker-data/nginx-proxy-manager/data:/data
+      # - ./letsencrypt:/etc/letsencrypt
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    privileged: true
+    ports:
+      - 53101:9000
+    volumes:
+      - "$DOCKER_SOCKET:/var/run/docker.sock"
+      - ~/docker-data/portainer/data:/data
+
+  gitlab-runner1:
+    container_name: gitlab-runner1
+    image: 'soulkst/gitlab-runner:latest'
+    restart: always
+    privileged: true
+    network_mode: host
+    environment:
+      CI_SERVER_URL: $GITLAB_URL
+      REGISTRATION_TOKEN: $GITLAB_REGISTRATION_TOKEN
+      RUNNER_EXECUTOR: docker
+
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_IMAGE: "*"
+      DOCKER_DNS: $INTERNAL_DNS_SERVER
+      DOCKER_TLS_VERIFY: false
+      DOCKER_NETWORK_MODE: host
+
+      CACHE_SHARED: true
+    dns:
+      - $INTERNAL_DNS_SERVER
+    volumes:
+      - "$DOCKER_SOCKET:/var/run/docker.sock"
